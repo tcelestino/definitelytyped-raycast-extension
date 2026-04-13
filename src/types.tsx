@@ -42,6 +42,39 @@ function toTypePackage(npmName: string): TypePackage {
   };
 }
 
+function EmptyView({
+  error,
+  shouldSearch,
+  isLoading,
+  packages,
+  searchText,
+}: {
+  error?: Error;
+  shouldSearch: boolean;
+  isLoading: boolean;
+  packages: TypePackage[];
+  searchText: string;
+}) {
+  if (error) {
+    return <List.EmptyView icon={Icon.ExclamationMark} title="Search failed" description={error.message} />;
+  }
+  if (!shouldSearch) {
+    return (
+      <List.EmptyView
+        icon={Icon.MagnifyingGlass}
+        title="Search @types packages"
+        description="Type at least 2 characters to search"
+      />
+    );
+  }
+  if (!isLoading && packages.length === 0) {
+    return (
+      <List.EmptyView icon={Icon.XMarkCircle} title="No packages found" description={`No match for "${searchText}"`} />
+    );
+  }
+  return null;
+}
+
 export default function Command() {
   const [searchText, setSearchText] = useState("");
 
@@ -55,6 +88,9 @@ export default function Command() {
   const packages = useMemo(() => {
     if (!data) return [];
     const seen = new Set<string>();
+
+    if (!data.objects) return [];
+
     return data.objects
       .map(({ package: pkg }) => toTypePackage(pkg.name))
       .filter((pkg) => {
@@ -63,31 +99,6 @@ export default function Command() {
         return true;
       });
   }, [data]);
-
-  function emptyView() {
-    if (error) {
-      return <List.EmptyView icon={Icon.ExclamationMark} title="Search failed" description={error.message} />;
-    }
-    if (!shouldSearch) {
-      return (
-        <List.EmptyView
-          icon={Icon.MagnifyingGlass}
-          title="Search @types packages"
-          description="Type at least 2 characters to search"
-        />
-      );
-    }
-    if (!isLoading && packages.length === 0) {
-      return (
-        <List.EmptyView
-          icon={Icon.XMarkCircle}
-          title="No packages found"
-          description={`No match for "${searchText}"`}
-        />
-      );
-    }
-    return null;
-  }
 
   return (
     <List
@@ -98,7 +109,7 @@ export default function Command() {
       searchBarPlaceholder="Search TypeScript type packages..."
       searchText={searchText}
     >
-      {emptyView()}
+      {EmptyView({ error, shouldSearch, isLoading, packages, searchText })}
       {packages.map((pkg) => (
         <List.Item
           key={pkg.dirName}
