@@ -30,7 +30,7 @@ function resolvePackageNames(dirName: string): Pick<TypePackage, "displayName" |
 }
 
 function toTypePackage(npmName: string): TypePackage {
-  const dirName = npmName.replace("@types/", "");
+  const dirName = npmName.startsWith("@types/") ? npmName.replace("@types/", "") : npmName;
   const { displayName, installName } = resolvePackageNames(dirName);
   return {
     dirName,
@@ -102,8 +102,10 @@ export default function Command() {
 
   async function toggleFavorite(dirName: string) {
     const isFav = favorites.includes(dirName);
+    const newFavorites = isFav ? favorites.filter((f) => f !== dirName) : [...favorites, dirName];
+
     try {
-      await setFavorites(isFav ? favorites.filter((f) => f !== dirName) : [...favorites, dirName]);
+      await setFavorites(newFavorites);
     } catch {
       await showToast({ style: Toast.Style.Failure, title: "Failed to update favorites" });
     }
@@ -114,16 +116,25 @@ export default function Command() {
 
   const { isLoading, data, error } = useFetch<NpmSearchResponse>(
     `${NPM_SEARCH_BASE}?text=%40types%2F${encodeURIComponent(searchText)}&size=20`,
-    { execute: shouldSearch, keepPreviousData: false },
+    {
+      execute: shouldSearch,
+      keepPreviousData: false,
+      onError: (err) => {
+        showToast({
+          style: Toast.Style.Failure,
+          title: "Search failed",
+          message: err.message,
+        });
+      },
+    },
   );
 
   const packages = useMemo(() => {
-    if (!data) return [];
+    if (!data?.objects) return [];
     const seen = new Set<string>();
 
-    if (!data.objects) return [];
-
     return data.objects
+      .filter(({ package: pkg }) => pkg.name.startsWith("@types/"))
       .map(({ package: pkg }) => toTypePackage(pkg.name))
       .filter((pkg) => {
         if (seen.has(pkg.dirName)) return false;
