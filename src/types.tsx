@@ -149,7 +149,6 @@ export default function Command() {
     const seen = new Set<string>();
 
     return data.objects
-      .filter(({ package: pkg }) => pkg.name.startsWith("@types/"))
       .map(({ package: pkg }) => toTypePackage(pkg.name))
       .filter((pkg) => {
         if (seen.has(pkg.dirName)) return false;
