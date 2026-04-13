@@ -62,11 +62,26 @@ function PackageActions({
         title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
         icon={isFavorite ? Icon.StarDisabled : Icon.Star}
         onAction={onToggleFavorite}
-        shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+        shortcut={{
+          macOS: { modifiers: ["cmd", "shift"], key: "f" },
+          Windows: { modifiers: ["ctrl", "shift"], key: "f" },
+        }}
       />
-      <Action.OpenInBrowser title="Open on Npmx.dev" url={pkg.npmxUrl} shortcut={{ modifiers: ["cmd"], key: "x" }} />
-      <Action.OpenInBrowser title="Open on Npmjs.com" url={pkg.npmUrl} shortcut={{ modifiers: ["cmd"], key: "n" }} />
-      <Action.OpenInBrowser title="Open on GitHub" url={pkg.githubUrl} shortcut={{ modifiers: ["cmd"], key: "g" }} />
+      <Action.OpenInBrowser
+        title="Open on Npmx.dev"
+        url={pkg.npmxUrl}
+        shortcut={{ macOS: { modifiers: ["cmd"], key: "x" }, Windows: { modifiers: ["ctrl"], key: "x" } }}
+      />
+      <Action.OpenInBrowser
+        title="Open on Npmjs.com"
+        url={pkg.npmUrl}
+        shortcut={{ macOS: { modifiers: ["cmd"], key: "n" }, Windows: { modifiers: ["ctrl"], key: "n" } }}
+      />
+      <Action.OpenInBrowser
+        title="Open on GitHub"
+        url={pkg.githubUrl}
+        shortcut={{ macOS: { modifiers: ["cmd"], key: "g" }, Windows: { modifiers: ["ctrl"], key: "g" } }}
+      />
     </ActionPanel>
   );
 }
@@ -171,7 +186,7 @@ export default function Command() {
           <List.EmptyView
             icon={Icon.MagnifyingGlass}
             title="Search @types packages"
-            description="Type at least 2 characters to search • press ⌘⇧F on any result to favorite"
+            description="Type at least 2 characters to search • press ⌘⇧F (macOS) or Ctrl+Shift+f (Windows) on any result to favorite"
           />
         )
       ) : (
@@ -185,7 +200,12 @@ export default function Command() {
                 icon={Icon.Code}
                 title={pkg.displayName}
                 subtitle={pkg.installName}
-                accessories={[{ icon: isFavorite ? Icon.StarCircle : Icon.Star, tooltip: "⌘⇧F to favorite" }]}
+                accessories={[
+                  {
+                    icon: isFavorite ? Icon.StarCircle : Icon.Star,
+                    tooltip: "⌘⇧F (macOS) or Ctrl+Shift+f (Windows) to favorite",
+                  },
+                ]}
                 actions={
                   <PackageActions
                     pkg={pkg}
