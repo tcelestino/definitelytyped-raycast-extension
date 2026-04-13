@@ -42,6 +42,35 @@ function toTypePackage(npmName: string): TypePackage {
   };
 }
 
+function PackageActions({
+  pkg,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  pkg: TypePackage;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+}) {
+  return (
+    <ActionPanel>
+      <Action.CopyToClipboard
+        title="Copy Install Command"
+        content={`npm install -D ${pkg.installName}`}
+        shortcut={Keyboard.Shortcut.Common.Copy}
+      />
+      <Action
+        title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+        icon={isFavorite ? Icon.StarDisabled : Icon.Star}
+        onAction={onToggleFavorite}
+        shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+      />
+      <Action.OpenInBrowser title="Open on Npmx.dev" url={pkg.npmxUrl} shortcut={{ modifiers: ["cmd"], key: "x" }} />
+      <Action.OpenInBrowser title="Open on Npmjs.com" url={pkg.npmUrl} shortcut={{ modifiers: ["cmd"], key: "n" }} />
+      <Action.OpenInBrowser title="Open on GitHub" url={pkg.githubUrl} shortcut={{ modifiers: ["cmd"], key: "g" }} />
+    </ActionPanel>
+  );
+}
+
 function EmptyView({
   error,
   isLoading,
@@ -80,6 +109,7 @@ export default function Command() {
     }
   }
 
+  const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
   const favoritePackages = useMemo(() => favorites.map(toTypePackage), [favorites]);
 
   const { isLoading, data, error } = useFetch<NpmSearchResponse>(
@@ -121,34 +151,7 @@ export default function Command() {
                 title={pkg.displayName}
                 subtitle={pkg.installName}
                 actions={
-                  <ActionPanel>
-                    <Action.CopyToClipboard
-                      title="Copy Install Command"
-                      content={`npm install -D ${pkg.installName}`}
-                      shortcut={Keyboard.Shortcut.Common.Copy}
-                    />
-                    <Action
-                      title="Remove from Favorites"
-                      icon={Icon.StarDisabled}
-                      onAction={() => toggleFavorite(pkg.dirName)}
-                      shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
-                    />
-                    <Action.OpenInBrowser
-                      title="Open on Npmx.dev"
-                      url={pkg.npmxUrl}
-                      shortcut={{ modifiers: ["cmd"], key: "x" }}
-                    />
-                    <Action.OpenInBrowser
-                      title="Open on Npmjs.com"
-                      url={pkg.npmUrl}
-                      shortcut={{ modifiers: ["cmd"], key: "n" }}
-                    />
-                    <Action.OpenInBrowser
-                      title="Open on GitHub"
-                      url={pkg.githubUrl}
-                      shortcut={{ modifiers: ["cmd"], key: "g" }}
-                    />
-                  </ActionPanel>
+                  <PackageActions pkg={pkg} isFavorite={true} onToggleFavorite={() => toggleFavorite(pkg.dirName)} />
                 }
               />
             ))}
@@ -164,7 +167,7 @@ export default function Command() {
         <>
           <EmptyView error={error} isLoading={isLoading} packages={packages} searchText={searchText} />
           {packages.map((pkg) => {
-            const isFavorite = favorites.includes(pkg.dirName);
+            const isFavorite = favoritesSet.has(pkg.dirName);
             return (
               <List.Item
                 key={pkg.dirName}
@@ -173,34 +176,11 @@ export default function Command() {
                 subtitle={pkg.installName}
                 accessories={[{ icon: isFavorite ? Icon.StarCircle : Icon.Star, tooltip: "⌘⇧F to favorite" }]}
                 actions={
-                  <ActionPanel>
-                    <Action.CopyToClipboard
-                      title="Copy Install Command"
-                      content={`npm install -D ${pkg.installName}`}
-                      shortcut={Keyboard.Shortcut.Common.Copy}
-                    />
-                    <Action
-                      title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-                      icon={isFavorite ? Icon.StarDisabled : Icon.Star}
-                      onAction={() => toggleFavorite(pkg.dirName)}
-                      shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
-                    />
-                    <Action.OpenInBrowser
-                      title="Open on Npmx.dev"
-                      url={pkg.npmxUrl}
-                      shortcut={{ modifiers: ["cmd"], key: "x" }}
-                    />
-                    <Action.OpenInBrowser
-                      title="Open on Npmjs.com"
-                      url={pkg.npmUrl}
-                      shortcut={{ modifiers: ["cmd"], key: "n" }}
-                    />
-                    <Action.OpenInBrowser
-                      title="Open on GitHub"
-                      url={pkg.githubUrl}
-                      shortcut={{ modifiers: ["cmd"], key: "g" }}
-                    />
-                  </ActionPanel>
+                  <PackageActions
+                    pkg={pkg}
+                    isFavorite={isFavorite}
+                    onToggleFavorite={() => toggleFavorite(pkg.dirName)}
+                  />
                 }
               />
             );
