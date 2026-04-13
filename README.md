@@ -8,6 +8,10 @@ Raycast extension to search `@types` packages from [DefinitelyTyped](https://git
 
 Searches are performed live against the [npm registry](https://www.npmjs.com/) — type at least 2 characters to find matching `@types` packages. Results are returned directly from npm, so no local data is stored.
 
+### Favorites
+
+Press `⌘⇧F` on any result to save it as a favorite. Favorites appear on the home screen before you start typing, so you can quickly access and copy install commands for packages you use often. Press `⌘⇧F` again to remove a favorite.
+
 ## Getting Started
 
 ### Prerequisites
