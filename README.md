@@ -10,11 +10,21 @@ Searches are performed live against the [npm registry](https://www.npmjs.com/) �
 
 ### Available Commands
 
-- `⌘ C`: Copy install command (`npm install -D @types/...`)
-- `⌘ ⇧ F`: Add or remove package from favorites
-- `⌘ X`: Open package on [npmx.dev](https://npmx.dev)
-- `⌘ N`: Open package on [npmjs.com](https://www.npmjs.com/)
-- `⌘ G`: Open source on GitHub
+### macOS
+
+- `⌘ ⇧ c`: Copy install command (`npm install -D @types/...`)
+- `⌘ ⇧ f`: Add or remove package from favorites
+- `⌘ x`: Open package on [npmx.dev](https://npmx.dev)
+- `⌘ n`: Open package on [npmjs.com](https://www.npmjs.com/)
+- `⌘ g`: Open source on GitHub
+
+### Windows
+
+- `Ctrl + shift + c`: Copy install command (`npm install -D @types/...`)
+- `Ctrl + Shift + f`: Add or remove package from favorites
+- `Ctrl + x`: Open package on [npmx.dev](https://npmx.dev)
+- `Ctrl + n`: Open package on [npmjs.com](https://www.npmjs.com/)
+- `Ctrl + g`: Open source on GitHub
 
 ## Getting Started
 
