@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { ActionPanel, Action, Icon, List, Keyboard } from "@raycast/api";
-import { useFetch } from "@raycast/utils";
+import { ActionPanel, Action, Icon, List, Keyboard, showToast, Toast } from "@raycast/api";
+import { useFetch, useLocalStorage } from "@raycast/utils";
 
 const NPM_SEARCH_BASE = "https://registry.npmjs.org/-/v1/search";
 const DT_GITHUB_TYPES_BASE = "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types";
@@ -44,28 +44,17 @@ function toTypePackage(npmName: string): TypePackage {
 
 function EmptyView({
   error,
-  shouldSearch,
   isLoading,
   packages,
   searchText,
 }: {
   error?: Error;
-  shouldSearch: boolean;
   isLoading: boolean;
   packages: TypePackage[];
   searchText: string;
 }) {
   if (error) {
     return <List.EmptyView icon={Icon.ExclamationMark} title="Search failed" description={error.message} />;
-  }
-  if (!shouldSearch) {
-    return (
-      <List.EmptyView
-        icon={Icon.MagnifyingGlass}
-        title="Search @types packages"
-        description="Type at least 2 characters to search"
-      />
-    );
   }
   if (!isLoading && packages.length === 0) {
     return (
@@ -79,6 +68,19 @@ export default function Command() {
   const [searchText, setSearchText] = useState("");
 
   const shouldSearch = searchText.length >= 2;
+
+  const { value: favorites = [], setValue: setFavorites } = useLocalStorage<string[]>("dt-favorites", []);
+
+  async function toggleFavorite(dirName: string) {
+    const isFav = favorites.includes(dirName);
+    try {
+      await setFavorites(isFav ? favorites.filter((f) => f !== dirName) : [...favorites, dirName]);
+    } catch {
+      await showToast({ style: Toast.Style.Failure, title: "Failed to update favorites" });
+    }
+  }
+
+  const favoritePackages = useMemo(() => favorites.map(toTypePackage), [favorites]);
 
   const { isLoading, data, error } = useFetch<NpmSearchResponse>(
     `${NPM_SEARCH_BASE}?text=%40types%2F${encodeURIComponent(searchText)}&size=20`,
@@ -109,39 +111,102 @@ export default function Command() {
       searchBarPlaceholder="Search TypeScript type packages..."
       searchText={searchText}
     >
-      {EmptyView({ error, shouldSearch, isLoading, packages, searchText })}
-      {packages.map((pkg) => (
-        <List.Item
-          key={pkg.dirName}
-          icon={Icon.Code}
-          title={pkg.displayName}
-          subtitle={pkg.installName}
-          actions={
-            <ActionPanel>
-              <Action.CopyToClipboard
-                title="Copy Install Command"
-                content={`npm install -D ${pkg.installName}`}
-                shortcut={Keyboard.Shortcut.Common.Copy}
+      {!shouldSearch ? (
+        favoritePackages.length > 0 ? (
+          <List.Section title="Favorites">
+            {favoritePackages.map((pkg) => (
+              <List.Item
+                key={pkg.dirName}
+                icon={Icon.StarCircle}
+                title={pkg.displayName}
+                subtitle={pkg.installName}
+                actions={
+                  <ActionPanel>
+                    <Action.CopyToClipboard
+                      title="Copy Install Command"
+                      content={`npm install -D ${pkg.installName}`}
+                      shortcut={Keyboard.Shortcut.Common.Copy}
+                    />
+                    <Action
+                      title="Remove from Favorites"
+                      icon={Icon.StarDisabled}
+                      onAction={() => toggleFavorite(pkg.dirName)}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+                    />
+                    <Action.OpenInBrowser
+                      title="Open on Npmx.dev"
+                      url={pkg.npmxUrl}
+                      shortcut={{ modifiers: ["cmd"], key: "x" }}
+                    />
+                    <Action.OpenInBrowser
+                      title="Open on Npmjs.com"
+                      url={pkg.npmUrl}
+                      shortcut={{ modifiers: ["cmd"], key: "n" }}
+                    />
+                    <Action.OpenInBrowser
+                      title="Open on GitHub"
+                      url={pkg.githubUrl}
+                      shortcut={{ modifiers: ["cmd"], key: "g" }}
+                    />
+                  </ActionPanel>
+                }
               />
-              <Action.OpenInBrowser
-                title="Open on npmx.dev"
-                url={pkg.npmxUrl}
-                shortcut={{ modifiers: ["cmd"], key: "x" }}
+            ))}
+          </List.Section>
+        ) : (
+          <List.EmptyView
+            icon={Icon.MagnifyingGlass}
+            title="Search @types packages"
+            description="Type at least 2 characters to search • press ⌘⇧F on any result to favorite"
+          />
+        )
+      ) : (
+        <>
+          <EmptyView error={error} isLoading={isLoading} packages={packages} searchText={searchText} />
+          {packages.map((pkg) => {
+            const isFavorite = favorites.includes(pkg.dirName);
+            return (
+              <List.Item
+                key={pkg.dirName}
+                icon={Icon.Code}
+                title={pkg.displayName}
+                subtitle={pkg.installName}
+                accessories={[{ icon: isFavorite ? Icon.StarCircle : Icon.Star, tooltip: "⌘⇧F to favorite" }]}
+                actions={
+                  <ActionPanel>
+                    <Action.CopyToClipboard
+                      title="Copy Install Command"
+                      content={`npm install -D ${pkg.installName}`}
+                      shortcut={Keyboard.Shortcut.Common.Copy}
+                    />
+                    <Action
+                      title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                      icon={isFavorite ? Icon.StarDisabled : Icon.Star}
+                      onAction={() => toggleFavorite(pkg.dirName)}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+                    />
+                    <Action.OpenInBrowser
+                      title="Open on Npmx.dev"
+                      url={pkg.npmxUrl}
+                      shortcut={{ modifiers: ["cmd"], key: "x" }}
+                    />
+                    <Action.OpenInBrowser
+                      title="Open on Npmjs.com"
+                      url={pkg.npmUrl}
+                      shortcut={{ modifiers: ["cmd"], key: "n" }}
+                    />
+                    <Action.OpenInBrowser
+                      title="Open on GitHub"
+                      url={pkg.githubUrl}
+                      shortcut={{ modifiers: ["cmd"], key: "g" }}
+                    />
+                  </ActionPanel>
+                }
               />
-              <Action.OpenInBrowser
-                title="Open on Npmjs.com"
-                url={pkg.npmUrl}
-                shortcut={{ modifiers: ["cmd"], key: "n" }}
-              />
-              <Action.OpenInBrowser
-                title="Open on GitHub"
-                url={pkg.githubUrl}
-                shortcut={{ modifiers: ["cmd"], key: "g" }}
-              />
-            </ActionPanel>
-          }
-        />
-      ))}
+            );
+          })}
+        </>
+      )}
     </List>
   );
 }
